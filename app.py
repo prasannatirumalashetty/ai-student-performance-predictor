@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-# Page settings
 st.set_page_config(
     page_title="AI Student Performance Predictor",
     page_icon="🤖",
@@ -20,100 +19,48 @@ data = {
 
 df = pd.DataFrame(data)
 
-# ---------------- TITLE ----------------
-st.title("🤖 AI Student Performance Predictor")
-st.write(
-    "An AI-powered dashboard to predict and analyze student performance."
-)
-
-st.divider()
-
-# ---------------- SIDEBAR ----------------
-st.sidebar.header("⚙️ Options")
-
-uploaded_file = st.sidebar.file_uploader(
-    "📁 Upload Student CSV",
-    type=["csv"]
-)
-
-if uploaded_file is not None:
-    try:
-        uploaded_df = pd.read_csv(uploaded_file)
-
-        required_columns = [
-            "Attendance",
-            "Study_Hours",
-            "Assignment_Score"
-        ]
-
-        if all(column in uploaded_df.columns for column in required_columns):
-            df = uploaded_df
-            st.sidebar.success("CSV uploaded successfully!")
-        else:
-            st.sidebar.error(
-                "CSV must contain Attendance, Study_Hours and Assignment_Score."
-            )
-
-    except Exception:
-        st.sidebar.error("Unable to read CSV file.")
-
 # ---------------- MODEL ----------------
 X = df[["Attendance", "Study_Hours", "Assignment_Score"]]
+y = df["Final_Marks"]
 
-if "Final_Marks" in df.columns:
-    y = df["Final_Marks"]
+model = LinearRegression()
+model.fit(X, y)
 
-    model = LinearRegression()
-    model.fit(X, y)
+# ---------------- TITLE ----------------
+st.title("🤖 AI Student Performance Predictor")
+st.write("Predict and analyze student performance using Machine Learning.")
 
-    model_ready = True
-else:
-    model_ready = False
-
-# ---------------- DASHBOARD ----------------
-st.subheader("📊 Student Performance Dashboard")
-
-if "Final_Marks" in df.columns:
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("👥 Students", len(df))
-
-    with col2:
-        st.metric("📈 Average Marks", f"{df['Final_Marks'].mean():.1f}")
-
-    with col3:
-        st.metric("🏆 Highest Marks", f"{df['Final_Marks'].max():.1f}")
-
-    with col4:
-        st.metric("📉 Lowest Marks", f"{df['Final_Marks'].min():.1f}")
-
-    st.divider()
-
-    # Charts
-    st.subheader("📈 Marks Analysis")
-
-    chart_data = df.set_index("Student")["Final_Marks"]
-
-    st.bar_chart(chart_data)
-
-    st.subheader("📋 Student Data")
-
-    st.dataframe(
-        df,
-        use_container_width=True
-    )
-
-# ---------------- PREDICT ----------------
 st.divider()
 
+# ---------------- DASHBOARD ----------------
+st.subheader("📊 Performance Dashboard")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric("👥 Students", len(df))
+
+with col2:
+    st.metric("📈 Average Marks", f"{df['Final_Marks'].mean():.1f}")
+
+with col3:
+    st.metric("🏆 Highest", f"{df['Final_Marks'].max():.0f}")
+
+with col4:
+    st.metric("📉 Lowest", f"{df['Final_Marks'].min():.0f}")
+
+st.bar_chart(
+    df.set_index("Student")["Final_Marks"]
+)
+
+st.divider()
+
+# ---------------- PREDICTION ----------------
 st.subheader("🔮 Predict Student Performance")
 
 col1, col2 = st.columns(2)
 
 with col1:
-
     student_name = st.text_input(
         "👤 Student Name",
         placeholder="Enter student name"
@@ -127,7 +74,6 @@ with col1:
     )
 
 with col2:
-
     study_hours = st.number_input(
         "📚 Study Hours / Day",
         min_value=0.0,
@@ -143,21 +89,12 @@ with col2:
         value=70
     )
 
-if st.button(
-    "🚀 Predict Final Marks",
-    use_container_width=True
-):
+if st.button("🚀 Predict Final Marks", use_container_width=True):
 
     if not student_name.strip():
         st.warning("⚠️ Please enter student name.")
 
-    elif not model_ready:
-        st.error(
-            "❌ Prediction requires a CSV with Final_Marks column."
-        )
-
     else:
-
         new_student = pd.DataFrame({
             "Attendance": [attendance],
             "Study_Hours": [study_hours],
@@ -165,48 +102,127 @@ if st.button(
         })
 
         prediction = model.predict(new_student)[0]
-
         prediction = max(0, min(100, prediction))
 
+        # ---------------- GRADE ----------------
+        if prediction >= 90:
+            grade = "A+"
+            performance = "🏆 Excellent"
+
+        elif prediction >= 80:
+            grade = "A"
+            performance = "🟢 Very Good"
+
+        elif prediction >= 70:
+            grade = "B"
+            performance = "🟢 Good"
+
+        elif prediction >= 60:
+            grade = "C"
+            performance = "🟡 Average"
+
+        elif prediction >= 50:
+            grade = "D"
+            performance = "🟠 Below Average"
+
+        else:
+            grade = "F"
+            performance = "🔴 Needs Improvement"
+
+        # ---------------- SMART RECOMMENDATION ----------------
+        if attendance < 75:
+            recommendation = (
+                "Improve attendance. Regular class attendance "
+                "can help improve overall performance."
+            )
+
+        elif study_hours < 3:
+            recommendation = (
+                "Increase daily study time to at least 3 hours "
+                "and maintain a consistent study schedule."
+            )
+
+        elif assignment_score < 70:
+            recommendation = (
+                "Focus on assignments and try to score above 70 "
+                "to improve your final performance."
+            )
+
+        else:
+            recommendation = (
+                "Great consistency! Continue maintaining your "
+                "attendance, study hours and assignment performance."
+            )
+
+        # ---------------- RESULT ----------------
         st.divider()
 
         st.subheader(f"🎯 Result for {student_name}")
 
-        st.metric(
-            "Predicted Final Marks",
-            f"{prediction:.2f} / 100"
-        )
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Predicted Marks",
+                f"{prediction:.2f}/100"
+            )
+
+        with col2:
+            st.metric(
+                "Grade",
+                grade
+            )
+
+        with col3:
+            st.metric(
+                "Performance",
+                performance
+            )
 
         st.progress(int(prediction))
 
-        if prediction >= 85:
-            st.success(
-                "🏆 Excellent Performance! Keep it up!"
-            )
+        st.info(f"💡 **AI Recommendation:** {recommendation}")
 
-        elif prediction >= 70:
-            st.success(
-                "🟢 Good Performance! A little more effort can make it excellent."
-            )
+        # ---------------- REPORT ----------------
+        report = pd.DataFrame({
+            "Student Name": [student_name],
+            "Attendance (%)": [attendance],
+            "Study Hours / Day": [study_hours],
+            "Assignment Score": [assignment_score],
+            "Predicted Marks": [round(prediction, 2)],
+            "Grade": [grade],
+            "Performance": [performance],
+            "Recommendation": [recommendation]
+        })
 
-        elif prediction >= 50:
-            st.warning(
-                "🟡 Average Performance. Focus more on study hours and assignments."
-            )
+        st.subheader("📋 Student Report")
+        st.dataframe(report, use_container_width=True)
 
-        else:
-            st.error(
-                "🔴 Needs Improvement. Increase attendance and study time."
-            )
+        # ---------------- DOWNLOAD ----------------
+        csv = report.to_csv(index=False)
 
-        st.info(
-            "💡 Recommendation: Maintain good attendance, "
-            "increase study consistency and complete assignments regularly."
+        st.download_button(
+            "📥 Download Student Report",
+            data=csv,
+            file_name=f"{student_name}_performance_report.csv",
+            mime="text/csv",
+            use_container_width=True
         )
 
-# ---------------- FOOTER ----------------
 st.divider()
+
+# ---------------- MODEL INFO ----------------
+with st.expander("🧠 About this AI Model"):
+    st.write(
+        "This application uses Linear Regression from Scikit-learn "
+        "to predict final student marks."
+    )
+
+    st.write(
+        "The model uses Attendance, Study Hours and Assignment Score "
+        "as input features."
+    )
 
 st.caption(
     "Built with Python • Pandas • Scikit-learn • Streamlit 🤖"
-)
+)          

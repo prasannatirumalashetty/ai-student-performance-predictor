@@ -1,4 +1,6 @@
+## 🚀 Live Demo
 
+👉 [Open AI Student Performance Predictor](https://ai-student-performance-predictor-h9cjjhf9siz5kysp6qtndq.streamlit.app/)
 # 🤖 AI Student Performance Predictor
 
 An AI-powered web application that predicts student final marks based on attendance, study hours, and assignment scores using Machine Learning.

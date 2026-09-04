@@ -1,3 +1,6 @@
+## 📊 Dashboard
+
+![AI Student Performance Dashboard](dashboard.png)
 ## 🚀 Live Demo
 
 👉 [Open AI Student Performance Predictor](https://ai-student-performance-predictor-h9cjjhf9siz5kysp6qtndq.streamlit.app/)
